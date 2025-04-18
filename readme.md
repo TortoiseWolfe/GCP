@@ -128,27 +128,41 @@ sudo -E docker-compose up -d wordpress wp-setup db
 
 ### Option B: Production Environment with Google Secret Manager
 
-```bash
-# Authenticate with Google Cloud
-gcloud auth login
-gcloud config set project YOUR_PROJECT_ID
+```bash#!/usr/bin/env bash
+set -euo pipefail
 
-# Create required secrets (first time only)
-gcloud secrets create MYSQL_ROOT_PASSWORD --replication-policy="automatic"
-gcloud secrets create MYSQL_PASSWORD --replication-policy="automatic" 
-gcloud secrets create WP_ADMIN_PASSWORD --replication-policy="automatic"
-gcloud secrets create WP_ADMIN_EMAIL --replication-policy="automatic"
+################################################################################
+# Configuration — define the fixed GitHub token to hardcode below
+################################################################################
+
+# 👇 Replace with your actual token (keep it safe and don't commit!)
+GITHUB_TOKEN="ghp_YourFixedTokenGoesHere"
+
+
+################################################################################
+# Delete & recreate the GITHUB_TOKEN secret
+################################################################################
+
+echo "⏳ Deleting existing secret: GITHUB_TOKEN (if it exists)…"
+gcloud secrets delete GITHUB_TOKEN --quiet || true
+
+echo "📦 Creating new secret: GITHUB_TOKEN…"
 gcloud secrets create GITHUB_TOKEN --replication-policy="automatic"
 
-# Add values to secrets
-echo -n "secure-root-password" | gcloud secrets versions add MYSQL_ROOT_PASSWORD --data-file=-
-echo -n "secure-db-password" | gcloud secrets versions add MYSQL_PASSWORD --data-file=-
-echo -n "secure-admin-password" | gcloud secrets versions add WP_ADMIN_PASSWORD --data-file=-
-echo -n "admin@yourdomain.com" | gcloud secrets versions add WP_ADMIN_EMAIL --data-file=-
-echo -n "your-github-token" | gcloud secrets versions add GITHUB_TOKEN --data-file=-
+echo -n "$GITHUB_TOKEN" \
+  | gcloud secrets versions add GITHUB_TOKEN --data-file=-
 
-# Load secrets into environment and .env file
-source ./scripts/setup-secrets.sh
+echo "✅ GITHUB_TOKEN successfully reset and seeded."
+
+
+################################################################################
+# Export into current shell session (optional)
+################################################################################
+
+export GITHUB_TOKEN
+
+echo
+echo "🔐 GITHUB_TOKEN is now available in your current shell session."
 ```
 
 ## 4. GitHub Authentication Flow
